@@ -119,7 +119,10 @@
   <div id="inventory-panel" class="side-panel" style="display:none">
     <div class="panel-header">
       <h3>Inventory</h3>
-      <button class="close-btn" onclick="UI.toggleInventory()">✕</button>
+      <div style="display:flex;gap:4px">
+        <button class="btn-small" onclick="UI.togglePixelEditor()" title="Pixel Art Editor">🎨</button>
+        <button class="close-btn" onclick="UI.toggleInventory()">✕</button>
+      </div>
     </div>
 
     <!-- Equipped backpack -->
@@ -178,6 +181,36 @@
     <div id="planet-selector"></div>
   </div>
 
+  <!-- ======= CHAT ======= -->
+  <div id="chat-log"></div>
+  <input type="text" id="chat-input" class="chat-input" placeholder="Type a message..." maxlength="200" autocomplete="off"/>
+
+  <!-- ======= PIXEL EDITOR ======= -->
+  <div id="pixel-editor" class="side-panel" style="display:none">
+    <div class="panel-header">
+      <h3>🎨 Pixel Editor</h3>
+      <button class="close-btn" onclick="UI.togglePixelEditor()">✕</button>
+    </div>
+    <div class="section-label">Draw 16x16 sprite</div>
+    <div style="display:flex;gap:8px;align-items:flex-start">
+      <canvas id="pixel-canvas" width="192" height="192" style="border:1px solid var(--border);border-radius:4px;cursor:crosshair;image-rendering:pixelated"></canvas>
+      <div id="pixel-palette" style="display:grid;grid-template-columns:repeat(4,1fr);gap:2px"></div>
+    </div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap">
+      <button class="btn-small" onclick="PixelEditor.fill()">Fill All</button>
+      <button class="btn-small" onclick="PixelEditor.clear()">Clear</button>
+      <button class="btn-small" onclick="PixelEditor.eyedrop()">Eyedrop</button>
+      <button class="btn-small" onclick="PixelEditor.saveCurrent()">Save</button>
+    </div>
+    <div class="section-label">Saved Sprites</div>
+    <div id="saved-sprites-list"></div>
+    <div class="section-label">Assign to Tile/Item</div>
+    <div style="display:flex;gap:4px">
+      <input type="text" id="sprite-assign-id" placeholder="tile_id or item_id" style="flex:1;background:var(--bg-slot);border:1px solid var(--border);border-radius:3px;color:var(--text-main);padding:4px 8px;font-family:var(--font);font-size:11px"/>
+      <button class="btn-small" onclick="PixelEditor.assignToTile()">Assign</button>
+    </div>
+  </div>
+
   <!-- ======= TOAST MESSAGES ======= -->
   <div id="toast-container"></div>
 
@@ -205,8 +238,11 @@
 <script src="js/crafting.js"></script>
 <script src="js/ship.js"></script>
 <script src="js/entities.js"></script>
+<script src="js/sprite.js"></script>
+<script src="js/lighting.js"></script>
 <script src="js/renderer.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/chat.js"></script>
 <script src="js/network.js"></script>
 <script src="js/game.js"></script>
 <script>

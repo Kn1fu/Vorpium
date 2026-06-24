@@ -50,15 +50,25 @@ const World = (() => {
     const planet = PLANETS.find(p => p.id === activePlanet) || PLANETS[0];
     const biome  = BIOMES[planet.biomes[0]] || BIOMES.forest;
     const noise  = makeNoise(seed + cx * 7 + cy * 13);
+    const caveNoise = makeNoise(seed + cx * 3 + cy * 11 + 999);
 
     const worldX0 = cx * CHUNK_W;
     const worldY0 = cy * CHUNK_H;
 
-    // Surface height function
     function surfaceY(wx) {
-      const base = 60;    // tiles from top
+      const base = 60;
       const h = noise.fractal(wx * 0.04, 4) * 20;
       return Math.floor(base + h);
+    }
+
+    function isCave(wx, wy, depth) {
+      if (depth < 4) return false;
+      if (wy < 10) return false;
+      const val = caveNoise.fractal(wx * 0.06 + wy * 0.08, 3, 2.0, 0.5);
+      if (depth > 25 && val > 0.25) return true;
+      if (depth > 40 && val > 0.20) return true;
+      if (depth > 15 && val > 0.32) return true;
+      return false;
     }
 
     for (let lx = 0; lx < CHUNK_W; lx++) {
@@ -77,15 +87,15 @@ const World = (() => {
         } else if (depth < 5) {
           tiles[idx] = planet.biomes.includes('tundra') ? 'ice'
                      : planet.biomes.includes('desert') ? 'sand' : 'dirt';
+        } else if (isCave(wx, wy, depth)) {
+          tiles[idx] = 'air';
         } else {
-          // Underground layers
           const oreRng = mkRng(seed + wx * 31 + wy * 37);
           const r = oreRng();
 
           if (depth > 40 && planet.biomes.includes('void')) {
             tiles[idx] = 'void_rock';
           } else if (depth > 30) {
-            // Deep ores
             if (r < 0.04) tiles[idx] = 'nebulite';
             else if (r < 0.10) tiles[idx] = 'crystal_ore';
             else if (r < 0.18) tiles[idx] = 'gold_ore';

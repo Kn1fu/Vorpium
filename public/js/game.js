@@ -10,7 +10,16 @@ const Game = (() => {
     const minimapCanvas = document.getElementById('minimap');
     Renderer.init(canvas, minimapCanvas);
     Player.initInput(canvas);
+    Chat.init();
     loadGame();
+    // Load saved sprites
+    try {
+      const savedSprites = localStorage.getItem('voidbound_sprites');
+      if (savedSprites) {
+        const data = JSON.parse(savedSprites);
+        for (const s of data) Sprite.importSprite(s);
+      }
+    } catch(e) {}
     UI.showScreen('main-menu');
   }
 
@@ -107,6 +116,7 @@ const Game = (() => {
     document.getElementById('inventory-panel').style.display = 'none';
     document.getElementById('crafting-panel').style.display = 'none';
     document.getElementById('ship-panel').style.display = 'none';
+    document.getElementById('pixel-editor').style.display = 'none';
     UI.showScreen('main-menu');
   }
 

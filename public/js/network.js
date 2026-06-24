@@ -139,7 +139,7 @@ const Network = (() => {
         break;
 
       case 'chat':
-        UI.toast(`[${msg.from}] ${msg.message}`, 'info');
+        Chat.addMessage(msg.from, msg.message);
         break;
 
       case 'error':

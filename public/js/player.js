@@ -40,11 +40,13 @@ const Player = (() => {
       // Number keys for hotbar
       const num = parseInt(e.key);
       if (num >= 1 && num <= 9) Inventory.setActiveSlot(num - 1);
-      if (e.code === 'KeyE') UI.toggleInventory();
-      if (e.code === 'KeyC') UI.toggleCrafting();
-      if (e.code === 'KeyM') UI.toggleShip();
-      if (e.code === 'Escape') Game.togglePause();
-      e.preventDefault();
+      if (e.code === 'KeyE' && !Chat.isOpen) UI.toggleInventory();
+      if (e.code === 'KeyC' && !Chat.isOpen) UI.toggleCrafting();
+      if (e.code === 'KeyM' && !Chat.isOpen) UI.toggleShip();
+      if (e.code === 'KeyT' && !Chat.isOpen && Game.isRunning) Chat.toggle();
+      if (e.code === 'Escape' && !Chat.isOpen) Game.togglePause();
+      if (e.code === 'Escape' && Chat.isOpen) Chat.close();
+      if (!Chat.isOpen) e.preventDefault();
     });
     window.addEventListener('keyup', e => { keys[e.code] = false; });
 
@@ -217,6 +219,7 @@ const Player = (() => {
           const drop = TILES[tile].drop;
           if (drop) Inventory.addItem(drop, 1);
           World.setTile(wx, wy, 'air');
+          if (Network.connected) Network.sendTileUpdate(wx, wy, 'air');
           miningTarget = null;
           UI.toast(`Mined ${TILES[tile].name}`, 'info');
         }
@@ -232,19 +235,22 @@ const Player = (() => {
       const tile = World.getTile(wx, wy);
       if (tile === 'air') {
         const activeItem = Inventory.getActiveItem();
+        let placedTile = null;
         if (activeItem && ITEMS[activeItem.id] && ITEMS[activeItem.id].place) {
-          World.setTile(wx, wy, ITEMS[activeItem.id].place);
+          placedTile = ITEMS[activeItem.id].place;
+          World.setTile(wx, wy, placedTile);
           Inventory.consumeActive(1);
           placeCooldown = 10;
         } else if (activeItem && ITEMS[activeItem.id]) {
-          // Try to place block by item name matching tile
           const tileId = activeItem.id.replace('_plank','_plank').replace('_brick','_brick');
           if (TILES[tileId] && TILES[tileId].solid) {
+            placedTile = tileId;
             World.setTile(wx, wy, tileId);
             Inventory.consumeActive(1);
             placeCooldown = 10;
           }
         }
+        if (placedTile && Network.connected) Network.sendTileUpdate(wx, wy, placedTile);
       }
     }
   }

@@ -11,9 +11,9 @@ const UI = (() => {
     const panel = document.getElementById('inventory-panel');
     if (!panel) return;
     const open = panel.style.display !== 'none';
-    // Close others
     document.getElementById('crafting-panel').style.display = 'none';
     document.getElementById('ship-panel').style.display = 'none';
+    document.getElementById('pixel-editor').style.display = 'none';
     panel.style.display = open ? 'none' : 'flex';
     if (!open) Inventory.renderAll();
   }
@@ -24,6 +24,7 @@ const UI = (() => {
     const open = panel.style.display !== 'none';
     document.getElementById('inventory-panel').style.display = 'none';
     document.getElementById('ship-panel').style.display = 'none';
+    document.getElementById('pixel-editor').style.display = 'none';
     panel.style.display = open ? 'none' : 'flex';
     if (!open) {
       Crafting.detectNearbyStation();
@@ -38,8 +39,20 @@ const UI = (() => {
     const open = panel.style.display !== 'none';
     document.getElementById('inventory-panel').style.display = 'none';
     document.getElementById('crafting-panel').style.display = 'none';
+    document.getElementById('pixel-editor').style.display = 'none';
     panel.style.display = open ? 'none' : 'flex';
     if (!open) Ship.renderShipPanel();
+  }
+
+  function togglePixelEditor() {
+    const panel = document.getElementById('pixel-editor');
+    if (!panel) return;
+    const open = panel.style.display !== 'none';
+    document.getElementById('inventory-panel').style.display = 'none';
+    document.getElementById('crafting-panel').style.display = 'none';
+    document.getElementById('ship-panel').style.display = 'none';
+    panel.style.display = open ? 'none' : 'flex';
+    if (!open) PixelEditor.init();
   }
 
   // ---- Toast notifications ----

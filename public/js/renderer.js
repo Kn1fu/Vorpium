@@ -72,29 +72,32 @@ const Renderer = (() => {
         const sx = wx * T - camera.x;
         const sy = wy * T - camera.y;
 
-        ctx.fillStyle = tileDef.color || '#888';
-        ctx.fillRect(Math.floor(sx), Math.floor(sy), T, T);
+        const light = Lighting.getLightLevel(wx, wy);
+        const brightness = 0.3 + (light / 15) * 0.7;
 
-        // Subtle grid lines for solid tiles
+        ctx.fillStyle = tileDef.color || '#888';
+        ctx.globalAlpha = brightness;
+        ctx.fillRect(Math.floor(sx), Math.floor(sy), T, T);
+        ctx.globalAlpha = 1;
+
         if (tileDef.solid) {
-          ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+          ctx.strokeStyle = `rgba(0,0,0,${0.15 * brightness})`;
           ctx.lineWidth = 0.5;
           ctx.strokeRect(Math.floor(sx), Math.floor(sy), T, T);
         }
 
-        // Lava glow
         if (tileId === 'lava') {
-          ctx.fillStyle = `rgba(255,100,0,${0.3 + 0.1 * Math.sin(Date.now() / 400)})`;
+          const pulse = 0.3 + 0.1 * Math.sin(Date.now() / 400);
+          ctx.fillStyle = `rgba(255,100,0,${pulse * brightness})`;
           ctx.fillRect(Math.floor(sx), Math.floor(sy), T, T);
         }
-        // Water transparency
         if (tileId === 'water') {
-          ctx.fillStyle = 'rgba(32,96,192,0.45)';
+          ctx.fillStyle = `rgba(32,96,192,${0.45 * brightness})`;
           ctx.fillRect(Math.floor(sx), Math.floor(sy), T, T);
         }
-        // Torch light indicator
         if (tileId === 'torch') {
-          ctx.fillStyle = `rgba(255,180,40,${0.15 + 0.05 * Math.sin(Date.now() / 200)})`;
+          const flicker = 0.15 + 0.05 * Math.sin(Date.now() / 200 + wx * 3);
+          ctx.fillStyle = `rgba(255,180,40,${flicker})`;
           ctx.beginPath();
           ctx.arc(sx + T/2, sy + T/2, T * 3, 0, Math.PI * 2);
           ctx.fill();
@@ -111,24 +114,10 @@ const Renderer = (() => {
     const w  = ps.width;
     const h  = ps.height;
 
-    if (ps.dead) {
-      ctx.globalAlpha = 0.4;
-    }
+    if (ps.dead) ctx.globalAlpha = 0.4;
 
-    // Body
-    ctx.fillStyle = '#3060c0';
-    ctx.fillRect(sx, sy + 8, w, h - 8);
+    Sprite.drawPlayer(ctx, sx, sy, w, h, ps.facingRight, ps.name, true);
 
-    // Head
-    ctx.fillStyle = '#f0c88a';
-    ctx.fillRect(sx, sy, w, 10);
-
-    // Eyes
-    ctx.fillStyle = '#000';
-    const eyeX = ps.facingRight ? sx + 8 : sx + 2;
-    ctx.fillRect(eyeX, sy + 3, 2, 2);
-
-    // Held item indicator
     const activeItem = Inventory.getActiveItem();
     if (activeItem && ITEMS[activeItem.id]) {
       const icon = ITEMS[activeItem.id].icon || '';
@@ -138,30 +127,15 @@ const Renderer = (() => {
     }
 
     ctx.globalAlpha = 1;
-
-    // Player name tag
-    ctx.font = '10px Courier New';
-    ctx.fillStyle = '#fff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText(ps.name, sx + w / 2, sy - 2);
-    ctx.textAlign = 'left';
   }
 
   // ---- Draw other network players ----
   function drawNetPlayers(netPlayers) {
     for (const np of Object.values(netPlayers)) {
+      if (np.x == null || np.y == null) continue;
       const sx = Math.floor(np.x - camera.x);
       const sy = Math.floor(np.y - camera.y);
-      ctx.fillStyle = '#60b060';
-      ctx.fillRect(sx, sy + 8, 14, 20);
-      ctx.fillStyle = '#f0c88a';
-      ctx.fillRect(sx, sy, 14, 10);
-      ctx.font = '10px Courier New';
-      ctx.fillStyle = '#aaffaa';
-      ctx.textAlign = 'center';
-      ctx.fillText(np.name || 'Player', sx + 7, sy - 2);
-      ctx.textAlign = 'left';
+      Sprite.drawPlayer(ctx, sx, sy, 14, 28, np.facingRight, np.name || 'Player', false);
     }
   }
 
@@ -287,8 +261,10 @@ const Renderer = (() => {
 
   // ---- Main frame draw ----
   function drawFrame(entities, netPlayers) {
+    Lighting.update();
     updateCamera();
     ctx.clearRect(0, 0, width, height);
+    if (Lighting.getAmbient() < 6) drawStars();
     drawSky();
     drawWorld();
     drawEntities(entities);
@@ -298,6 +274,15 @@ const Renderer = (() => {
     drawPlayer();
     drawMinimap();
     updateHUD();
+  }
+
+  function drawStars() {
+    ctx.fillStyle = `rgba(255,255,255,${0.2 + Math.random() * 0.3})`;
+    for (let i = 0; i < 40; i++) {
+      const sx = ((i * 1619 + 12345) % width);
+      const sy = ((i * 2053) % Math.floor(height * 0.4));
+      ctx.fillRect(Math.floor(sx), Math.floor(sy), 1, 1);
+    }
   }
 
   function darken(hex, amount) {
