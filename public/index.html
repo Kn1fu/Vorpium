@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Voidbound — Space Survival</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<!-- ======= MAIN MENU ======= -->
+<div id="main-menu" class="screen active">
+  <div class="menu-bg"></div>
+  <div class="menu-content">
+    <h1 class="game-title">VOIDBOUND</h1>
+    <p class="game-subtitle">Explore. Build. Survive the cosmos.</p>
+    <div class="menu-buttons">
+      <button class="btn-primary" onclick="Game.startSinglePlayer()">▶ Single Player</button>
+      <button class="btn-primary" onclick="UI.showScreen('multiplayer-menu')">⚡ Multiplayer</button>
+      <button class="btn-secondary" onclick="UI.showScreen('settings-menu')">⚙ Settings</button>
+    </div>
+    <div class="version-tag">v0.1.0 Alpha</div>
+  </div>
+</div>
+
+<!-- ======= MULTIPLAYER MENU ======= -->
+<div id="multiplayer-menu" class="screen">
+  <div class="multiplayer-layout">
+    <!-- Left: connection + friends -->
+    <div class="panel mp-panel">
+      <h2>Multiplayer</h2>
+      <div class="form-row">
+        <label>Server IP</label>
+        <input type="text" id="server-ip" value="localhost:3000" placeholder="yoursite.com:3000"/>
+      </div>
+      <div class="form-row">
+        <label>Username</label>
+        <input type="text" id="player-name" value="Pilot" maxlength="20"/>
+      </div>
+      <button class="btn-primary" onclick="Game.startMultiplayer()">Connect &amp; Play</button>
+
+      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+        <div class="section-label">Friends</div>
+        <div class="form-row" style="flex-direction:row;gap:6px">
+          <input type="text" id="friend-add-input" placeholder="Add friend by username..." style="flex:1"/>
+          <button class="btn-small" onclick="addFriend()">Add</button>
+        </div>
+        <div id="friends-list"></div>
+      </div>
+
+      <button class="btn-secondary" onclick="UI.showScreen('main-menu')" style="margin-top:10px">← Back to Menu</button>
+    </div>
+
+    <!-- Right: joinable worlds -->
+    <div class="panel mp-panel mp-worlds-panel">
+      <h2>Joinable Worlds</h2>
+      <div id="worlds-list"></div>
+      <div class="section-label" style="margin-top:12px">How it works</div>
+      <div style="font-size:11px;color:var(--text-muted);line-height:1.5">
+        <p>1. Connect to a server above</p>
+        <p>2. In-game press ESC → <strong>Host World</strong></p>
+        <p>3. Friends see your world here and can Join</p>
+        <p>4. Add friends using the field on the left</p>
+        <p>5. Only friends can see and join your world</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= GAME SCREEN ======= -->
+<div id="game-screen" class="screen">
+  <!-- Canvas -->
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- HUD -->
+  <div id="hud">
+    <!-- Health / Stamina / Oxygen bars -->
+    <div id="stat-bars">
+      <div class="stat-bar">
+        <span class="stat-label">♥ HP</span>
+        <div class="bar-track"><div id="bar-hp" class="bar-fill hp"></div></div>
+        <span id="hp-text" class="stat-num">100/100</span>
+      </div>
+      <div class="stat-bar">
+        <span class="stat-label">⚡ EN</span>
+        <div class="bar-track"><div id="bar-energy" class="bar-fill energy"></div></div>
+        <span id="energy-text" class="stat-num">100/100</span>
+      </div>
+      <div class="stat-bar" id="oxygen-bar-row">
+        <span class="stat-label">◎ O₂</span>
+        <div class="bar-track"><div id="bar-oxygen" class="bar-fill oxygen"></div></div>
+        <span id="oxygen-text" class="stat-num">100/100</span>
+      </div>
+    </div>
+
+    <!-- Hotbar -->
+    <div id="hotbar">
+      <div id="hotbar-slots"></div>
+    </div>
+
+    <!-- Planet / Biome info -->
+    <div id="planet-info">
+      <span id="planet-name">🪐 Terra Prime</span>
+      <span id="biome-name">Forest Lowlands</span>
+    </div>
+
+    <!-- Mini-map -->
+    <canvas id="minimap" width="120" height="120"></canvas>
+
+    <!-- Depth / coords -->
+    <div id="coords-display">
+      <span id="coord-x">X: 0</span>
+      <span id="coord-y">Y: 0</span>
+      <span id="depth-label">Surface</span>
+    </div>
+  </div>
+
+  <!-- ======= INVENTORY PANEL ======= -->
+  <div id="inventory-panel" class="side-panel" style="display:none">
+    <div class="panel-header">
+      <h3>Inventory</h3>
+      <button class="close-btn" onclick="UI.toggleInventory()">✕</button>
+    </div>
+
+    <!-- Equipped backpack -->
+    <div id="backpack-section">
+      <div class="section-label">Equipped Backpack</div>
+      <div id="backpack-slot" class="equip-slot" ondragover="event.preventDefault()" ondrop="Inventory.dropToBackpack(event)">
+        <span id="backpack-name">No Backpack</span>
+      </div>
+      <div id="backpack-grid" class="item-grid"></div>
+    </div>
+
+    <!-- Main inventory -->
+    <div class="section-label">Main Inventory (20 slots)</div>
+    <div id="main-grid" class="item-grid"></div>
+
+    <!-- Equipment slots -->
+    <div class="section-label">Equipment</div>
+    <div id="equip-slots" class="equip-row">
+      <div class="equip-slot" data-slot="helmet" title="Helmet">🪖</div>
+      <div class="equip-slot" data-slot="chest" title="Chest">🥼</div>
+      <div class="equip-slot" data-slot="legs" title="Legs">👖</div>
+      <div class="equip-slot" data-slot="accessory1" title="Accessory">💎</div>
+      <div class="equip-slot" data-slot="accessory2" title="Accessory 2">💎</div>
+    </div>
+  </div>
+
+  <!-- ======= CRAFTING PANEL ======= -->
+  <div id="crafting-panel" class="side-panel" style="display:none">
+    <div class="panel-header">
+      <h3>Crafting</h3>
+      <button class="close-btn" onclick="UI.toggleCrafting()">✕</button>
+    </div>
+    <div class="crafting-station-label" id="crafting-station">🪵 Bare Hands</div>
+    <div id="recipe-list"></div>
+    <div id="recipe-detail">
+      <div id="recipe-name">Select a recipe</div>
+      <div id="recipe-ingredients"></div>
+      <button id="craft-btn" class="btn-primary" onclick="Crafting.craftSelected()" disabled>Craft</button>
+    </div>
+  </div>
+
+  <!-- ======= SHIP PANEL ======= -->
+  <div id="ship-panel" class="side-panel" style="display:none">
+    <div class="panel-header">
+      <h3>🚀 Ship — <span id="ship-name">Nomad I</span></h3>
+      <button class="close-btn" onclick="UI.toggleShip()">✕</button>
+    </div>
+    <div id="ship-stats">
+      <div class="ship-stat"><span>Hull</span><div class="bar-track"><div id="ship-hull-bar" class="bar-fill hp" style="width:60%"></div></div></div>
+      <div class="ship-stat"><span>Fuel</span><div class="bar-track"><div id="ship-fuel-bar" class="bar-fill energy" style="width:40%"></div></div></div>
+      <div class="ship-stat"><span>Engine</span><div class="bar-track"><div id="ship-engine-bar" class="bar-fill oxygen" style="width:25%"></div></div></div>
+    </div>
+    <div class="section-label">Upgrade Modules</div>
+    <div id="ship-upgrades"></div>
+    <div class="section-label">Planet Selector</div>
+    <div id="planet-selector"></div>
+  </div>
+
+  <!-- ======= TOAST MESSAGES ======= -->
+  <div id="toast-container"></div>
+
+  <!-- ======= PAUSE MENU ======= -->
+  <div id="pause-overlay" style="display:none">
+    <div class="panel pause-panel">
+      <h2>Paused</h2>
+      <button class="btn-primary" onclick="Game.resume()">▶ Resume</button>
+      <button id="host-world-btn" class="btn-primary" onclick="toggleHostWorld()" style="display:none">🌍 Host World</button>
+      <button class="btn-secondary" onclick="Game.returnToMenu()">🏠 Main Menu</button>
+    </div>
+  </div>
+
+  <!-- Controls hint -->
+  <div id="controls-hint">
+    WASD/Arrows: Move &nbsp;|&nbsp; E: Inventory &nbsp;|&nbsp; C: Craft &nbsp;|&nbsp; M: Ship &nbsp;|&nbsp; ESC: Pause &nbsp;|&nbsp; LMB: Mine/Attack &nbsp;|&nbsp; RMB: Place
+  </div>
+</div>
+
+<!-- ======= SCRIPTS ======= -->
+<script src="js/config.js"></script>
+<script src="js/world.js"></script>
+<script src="js/player.js"></script>
+<script src="js/inventory.js"></script>
+<script src="js/crafting.js"></script>
+<script src="js/ship.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/network.js"></script>
+<script src="js/game.js"></script>
+<script>
+function addFriend() {
+  const input = document.getElementById('friend-add-input');
+  const name = input ? input.value.trim() : '';
+  if (!name) return;
+  if (!Network.connected) { UI.toast('Not connected!', 'error'); return; }
+  Network.sendAddFriend(name);
+  input.value = '';
+}
+function toggleHostWorld() {
+  if (!Game.isMultiplayer) { UI.toast('Not in multiplayer', 'error'); return; }
+  Network.sendHostWorld(true);
+}
+</script>
+</body>
+</html>
